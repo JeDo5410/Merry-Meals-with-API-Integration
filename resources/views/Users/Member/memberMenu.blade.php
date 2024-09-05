@@ -3,6 +3,26 @@
 @endsection
 
 @extends('Users.Member.layouts.app')
+@php
+// Retrieve partners from the users table joined with the partners table
+$partners = DB::table('users')
+    ->join('partners', 'users.id', '=', 'partners.user_id')
+    ->where('users.role', 'partner')
+    ->select('users.id', 'users.name', 'users.geolocation', 'partners.partnership_restaurant')
+    ->get();
+
+$partnerData = [];
+foreach ($partners as $partner) {
+    if ($partner->geolocation) {
+        $partnerData[] = [
+            'id' => $partner->id,
+            'name' => $partner->name,
+            'geolocation' => $partner->geolocation,
+            'restaurant' => $partner->partnership_restaurant
+        ];
+    }
+}
+@endphp
 
 @section('content')		
 <style>
@@ -60,9 +80,64 @@
         background-color: #f8f9fa; 
         color: red;
     }
+	#map { 
+        height: 400px; 
+        width: 100%; 
+        margin-bottom: 20px;
+    }
+	.custom-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #ffffff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+	}
 
+	.custom-icon-inner {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		height: 100%;
+		border-radius: 50%;
+	}
+
+	.user-icon .custom-icon-inner {
+		background-color: #4CAF50; /* Green background for user */
+	}
+
+	.partner-icon .custom-icon-inner {
+		background-color: #FF5722; /* Orange background for partners */
+	}
+
+	.custom-icon i {
+		color: white;
+	}
+
+	.leaflet-div-icon {
+		background: transparent;
+		border: none;
+	}
+
+	.leaflet-popup-content-wrapper {
+		border-radius: 8px;
+		padding: 10px;
+	}
+
+	.leaflet-popup-content {
+		margin: 8px 12px;
+		font-size: 14px;
+		line-height: 1.4;
+	}
 
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
+
 	<body>
 		<div class="">
 			{{-- title & warning starts --}}
@@ -81,6 +156,12 @@
 				</div>
 			</div>
 			{{-- title & warning ends --}}
+
+			{{-- map starts --}}
+			<div class="container">
+				<div id="map"></div>
+			</div>
+			{{-- map ends --}}
 
 			{{-- menu item starts --}}
 			<div class="container menu_card">
@@ -168,6 +249,7 @@
 			{{-- menu item ends --}}
 		</div>
 	</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
 
 	<script src="{{ asset('js/jquery.min.js') }}" defer></script>
 	<!-- jQuery Easing -->
@@ -186,6 +268,52 @@
 	
 	<!-- Main JS -->
 	<script src="{{ asset('js/main.js') }}" defer></script>
+	<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Parse member location
+    var userGeolocation = "{{ Auth()->user()->geolocation }}";
+    var [userLat, userLng] = userGeolocation.split(',').map(Number);
+
+    // Initialize map
+    var map = L.map('map').setView([userLat, userLng], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Define custom icon styles
+    var memberIcon = L.divIcon({
+        className: 'custom-icon user-icon',
+        html: '<div class="custom-icon-inner"><i class="fas fa-user"></i></div>',
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+        popupAnchor: [0, -20]
+    });
+
+    var partnerIcon = L.divIcon({
+        className: 'custom-icon partner-icon',
+        html: '<div class="custom-icon-inner"><i class="fas fa-store"></i></div>',
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+        popupAnchor: [0, -20]
+    });
+
+    // Add member marker
+    L.marker([userLat, userLng], {icon: memberIcon}).addTo(map)
+        .bindPopup("<strong>Your Location</strong>")
+        .openPopup();
+
+    // Add partner markers
+    var partners = @json($partnerData);
+
+    partners.forEach(function(partner) {
+        if (partner.geolocation) {
+            var [partnerLat, partnerLng] = partner.geolocation.split(',').map(Number);
+            L.marker([partnerLat, partnerLng], {icon: partnerIcon}).addTo(map)
+                .bindPopup(partner.restaurant);
+        }
+    });
+});
+</script>
 
 @endsection
 
