@@ -3,7 +3,10 @@
 @section('title', 'Register')
 
 @section('content')
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <style type="text/css">
   .card {
       cursor: pointer;
@@ -49,6 +52,17 @@
 
 #map { height: 300px; width: 100%; }
 
+.modal.show {
+    display: block !important;
+    opacity: 1 !important;
+}
+.modal-dialog {
+    transform: none !important;
+    transition: none !important;
+}
+.modal-backdrop.show {
+    opacity: 0.5 !important;
+}
 
 </style>
 
@@ -61,7 +75,7 @@
 
                     <h1 class="text-center" style="text-align: center; color:#003366; font-weight: bold; margin:25px 0;">Registration Form</h1>
 
-                    <form method="POST" action="{{ route('register') }}">
+                    <form id="registrationForm" method="POST" action="{{ route('register') }}">
                         @csrf
 
                         <!-- Hidden field to determine selected interest -->
@@ -97,7 +111,7 @@
                             </div>
                         </div>
 
-                        <div class="row mb-4">
+                        <!-- <div class="row mb-4">
                             <label for="email" class="col-sm-4 col-form-label">Email</label>
                             <div class="col-sm-8">
                                 <input type="email" class="form-control" name="email" id="email" required="true">
@@ -116,7 +130,7 @@
                             <div class="col-sm-8">
                                 <input type="password" class="form-control" name="password_confirmation" id="password_confirmation" required="true">
                             </div>
-                        </div>
+                        </div> -->
 
                         <div class="row mb-4">
                             <label for="phone" class="col-sm-4 col-form-label">Phone number</label>
@@ -248,7 +262,7 @@
                         <!-- Submit and Reset buttons -->
                         <div class="row mb-4">
                             <div class="col-md-8 offset-md-4">
-                                <button type="submit" class="btn btn-primary">Register</button>
+                                <button type="submit" class="btn btn-primary">Continue to Sign Up</button>
                                 <button type="reset" class="btn btn-danger ">Clear</button>
                             </div>
                         </div>
@@ -260,10 +274,46 @@
             </div>
         </div>
     </div>
+    <!-- Modal -->
+    <div class="modal fade" id="signupModal" tabindex="-1" role="dialog" aria-labelledby="signupModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="signupModalLabel">Choose Signup Method</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <button id="emailSignup" class="btn btn-primary btn-block">Sign up with Email</button>
+                    <button id="googleSignup" class="btn btn-danger btn-block">Sign up with Google</button>
+                    
+                    <!-- Email signup form (initially hidden) -->
+                    <form id="emailSignupForm" style="display: none;">
+                        <div class="form-group">
+                            <label for="email">Email address</label>
+                            <input type="email" class="form-control" id="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPassword">Confirm Password</label>
+                            <input type="password" class="form-control" id="confirmPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Sign Up</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 <script>
     $(document).ready(function() {
         var role = $("#role").val();
@@ -320,6 +370,81 @@
                 console.log("Error: ", error);
             });
         }
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const mainForm = document.getElementById('registrationForm');
+            const modal = document.getElementById('signupModal');
+            const emailSignupBtn = document.getElementById('emailSignup');
+            const googleSignupBtn = document.getElementById('googleSignup');
+            const emailSignupForm = document.getElementById('emailSignupForm');
+
+            // Show modal when main form is submitted
+            mainForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (validateForm(mainForm)) {
+                    $(modal).modal('show');
+                }
+            });
+
+            // Show email signup form when email button is clicked
+            emailSignupBtn.addEventListener('click', function() {
+                emailSignupBtn.style.display = 'none';
+                googleSignupBtn.style.display = 'none';
+                emailSignupForm.style.display = 'block';
+            });
+
+            // Handle email signup form submission
+            emailSignupForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (validateEmailSignup()) {
+                    // Add email and password to the main form
+                    const emailInput = document.createElement('input');
+                    emailInput.type = 'hidden';
+                    emailInput.name = 'email';
+                    emailInput.value = document.getElementById('email').value;
+                    mainForm.appendChild(emailInput);
+
+                    const passwordInput = document.createElement('input');
+                    passwordInput.type = 'hidden';
+                    passwordInput.name = 'password';
+                    passwordInput.value = document.getElementById('password').value;
+                    mainForm.appendChild(passwordInput);
+
+                    // Submit the main form
+                    mainForm.submit();
+                }
+            });
+
+            // Validate main form
+            function validateForm(form) {
+                const requiredFields = form.querySelectorAll('[required]');
+                for (let field of requiredFields) {
+                    if (!field.value.trim()) {
+                        alert(`Please fill out the ${field.name} field.`);
+                        field.focus();
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            // Validate email signup
+            function validateEmailSignup() {
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+
+                if (password !== confirmPassword) {
+                    alert('Passwords do not match');
+                    return false;
+                }
+
+                // Add more validation as needed
+
+                return true;
+            }
+        });
+    
 </script>
 
 @endsection
