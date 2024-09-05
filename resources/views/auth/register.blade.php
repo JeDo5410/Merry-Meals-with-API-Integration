@@ -3,6 +3,7 @@
 @section('title', 'Register')
 
 @section('content')
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
 <style type="text/css">
   .card {
       cursor: pointer;
@@ -45,6 +46,8 @@
   justify-content: center;
   align-items: center;
 }
+
+#map { height: 300px; width: 100%; }
 
 
 </style>
@@ -132,22 +135,11 @@
                         <div class="row mb-4">
                             <label for="location" class="col-sm-4 col-form-label">Geo Location</label>
                             <div class="col-sm-8">
-                                <div style="display:flex; align-items: center;">
-                                    <input type="text" class="form-control" name="geolocation" id="location" />
-                                    <input type="button" value="Get Location" onclick="getlocation()" class="btn btn-primary">
-                                    <script>
-                                        function getlocation() {
-                                            navigator.geolocation.getCurrentPosition(showLoc);
-                                        }
-                                        function showLoc(pos) {
-                                            var lat = pos.coords.latitude;
-                                            var log = pos.coords.longitude;
-                                            document.getElementById("location").value = lat + "," + log;
-                                        }
-                                    </script>
-                                </div>
+                                <div id="map"></div>
+                                <input type="text" class="form-control mt-2" name="geolocation" id="location" readonly />
                             </div>
                         </div>
+
 
                         <!-- Member-specific fields -->
                         <div class="member box">
@@ -270,6 +262,7 @@
     </div>
 </body>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script>
     $(document).ready(function() {
@@ -288,6 +281,45 @@
             $("." + optionValue).show();
         }).change();
     });
+    
+     // Initialize the map
+     var map = L.map('map').setView([0, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        var marker;
+
+        // Function to update marker and input field
+        function updateLocation(lat, lng) {
+            if (marker) {
+                marker.setLatLng([lat, lng]);
+            } else {
+                marker = L.marker([lat, lng], {draggable: true}).addTo(map);
+                marker.on('dragend', function(event) {
+                    var position = event.target.getLatLng();
+                    updateLocation(position.lat, position.lng);
+                });
+            }
+            document.getElementById('location').value = lat.toFixed(6) + "," + lng.toFixed(6);
+        }
+
+        // Add click event to map
+        map.on('click', function(e) {
+            updateLocation(e.latlng.lat, e.latlng.lng);
+        });
+
+        // Try to get user's current location
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                var lat = position.coords.latitude;
+                var lng = position.coords.longitude;
+                map.setView([lat, lng], 13);
+                updateLocation(lat, lng);
+            }, function(error) {
+                console.log("Error: ", error);
+            });
+        }
 </script>
 
 @endsection
