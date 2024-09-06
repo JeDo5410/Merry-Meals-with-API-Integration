@@ -111,26 +111,6 @@
                             </div>
                         </div>
 
-                        <!-- <div class="row mb-4">
-                            <label for="email" class="col-sm-4 col-form-label">Email</label>
-                            <div class="col-sm-8">
-                                <input type="email" class="form-control" name="email" id="email" required="true">
-                            </div>
-                        </div>
-
-                        <div class="row mb-4">
-                            <label for="password" class="col-sm-4 col-form-label">Password</label>
-                            <div class="col-sm-8">
-                                <input type="password" class="form-control" name="password" id="password" required="true">
-                            </div>
-                        </div>
-
-                        <div class="row mb-4">
-                            <label for="password_confirmation" class="col-sm-4 col-form-label">Confirm Password</label>
-                            <div class="col-sm-8">
-                                <input type="password" class="form-control" name="password_confirmation" id="password_confirmation" required="true">
-                            </div>
-                        </div> -->
 
                         <div class="row mb-4">
                             <label for="phone" class="col-sm-4 col-form-label">Phone number</label>
@@ -267,7 +247,10 @@
                             </div>
                         </div>
                     </form>
-
+                    <form id="googleSignupForm" action="{{ route('auth.google') }}" method="POST" style="display: none;">
+                        @csrf
+                        <!-- We'll populate this form with JavaScript -->
+                    </form>
                     <br>
                     <p>Already have an account? <a href="{{ route('login') }}" class="text-sm text-gray-700 dark:text-gray-500" style="text-decoration: underline;">Login here.</a></p>
                 </div>      
@@ -286,15 +269,8 @@
                 </div>
                 <div class="modal-body">
                     <button id="emailSignup" class="btn btn-primary btn-block">Sign up with Email</button>
-                    <div id="g_id_onload"
-                        data-client_id="979946972745-hobdvu751q4ag2fsd0g3eqsbn7tdij2c.apps.googleusercontent.com"
-                        data-login_uri="{{ route('google.callback') }}"
-                        data-auto_prompt="false">
-                    </div>
+                    <button id="googleSignup" class="btn btn-danger btn-block">Sign up with Google</button>
 
-                    <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="outline"
-                        data-text="signin_with" data-size="large" data-logo_alignment="left"></div>
-                    
                     <!-- Email signup form (initially hidden) -->
                     <form id="emailSignupForm" style="display: none;">
                         <div class="form-group">
@@ -382,14 +358,45 @@
             const mainForm = document.getElementById('registrationForm');
             const modal = document.getElementById('signupModal');
             const emailSignupBtn = document.getElementById('emailSignup');
-            const googleSignupBtn = document.getElementById('g_id_onload');
+            const googleSignupBtn = document.getElementById('googleSignup');
+            const googleSignupForm = document.getElementById('googleSignupForm');
             const emailSignupForm = document.getElementById('emailSignupForm');
+            
 
             // Show modal when main form is submitted
             mainForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 if (validateForm(mainForm)) {
                     $(modal).modal('show');
+                }
+            });
+
+            googleSignupBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Validate the main form first
+                if (validateForm(mainForm)) {
+                    // Clone all fields from the main form to the Google form
+                    const formData = new FormData(mainForm);
+                    for (let [name, value] of formData.entries()) {
+                        let input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = name;
+                        input.value = value;
+                        googleSignupForm.appendChild(input);
+                    }
+
+                    // Add CSRF token
+                    let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    let csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = '_token';
+                    csrfInput.value = csrfToken;
+                    googleSignupForm.appendChild(csrfInput);
+
+                    
+                    // Submit the Google form
+                    googleSignupForm.submit();
                 }
             });
 

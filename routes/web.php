@@ -87,7 +87,10 @@ Route::middleware(['auth:sanctum', 'verified'])->get('/dashboard', function () {
     }
 })->name('welcome');
 
-route::get ('auth/google',[GoogleController::class,'googlepage']);
+Route::get('/login/google', [GoogleController::class, 'loginWithGoogle'])->name('login.google');
+
+// Route::match(['get', 'post'], 'auth/google', [GoogleController::class, 'googlepage'])->name('auth.google');
+route::post ('auth/google',[GoogleController::class,'googlepage'])->name('auth.google');    
 Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback'])->name('google.callback');
 
 //Member

@@ -30,6 +30,16 @@
             border: none;
             border-radius: 5px;
         }
+        .google-btn {
+            width: 100%;
+            background-color: #4285F4;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -82,6 +92,11 @@
                                 <button type="submit" class="btn btn-primary" style="width: 100%;">{{ __('Login') }}</button>
                             </div>
                         </form>
+                        <div class="mt-3">
+                            <a href="{{ route('login.google') }}" class="google-btn btn">
+                                <i class="fab fa-google"></i> Login with Google
+                            </a>
+                        </div>
                         <br>
                         <p>Don't have an account yet? <span><a href="{{ route('choose.interest') }}" class="text-sm text-gray-700 dark:text-gray-500" style="text-decoration: underline;">Register here</a></span></p>
                     </div>

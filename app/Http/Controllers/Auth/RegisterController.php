@@ -29,57 +29,43 @@ class RegisterController extends Controller
 
     use RegistersUsers;
 
-    /**
-     * Where to redirect users after registration.
-     *
-     * @var string
-     */
     protected $redirectTo = RouteServiceProvider::HOME;
 
-    /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
     public function __construct()
     {
         $this->middleware('guest');
     }
 
-    /**
-     * Show the registration form with selected interest.
-     *
-     * @param  Request  $request
-     * @return \Illuminate\View\View
-     */
     public function showRegistrationForm(Request $request)
     {
-        $interest = $request->query('interest'); // Get the interest from the query parameter
+        $interest = $request->query('interest') ?? session('google_auth_interest');
+        $googleAuth = session('google_auth', false);
         
-        // Pass the interest to the registration view
-        return view('auth.register', ['interest' => $interest]);
+        return view('auth.register', [
+            'interest' => $interest,
+            'googleAuth' => $googleAuth,
+            'googleName' => session('google_name'),
+            'googleEmail' => session('google_email')
+        ]);
     }
 
-    /**
-     * Get a validator for an incoming registration request.
-     *
-     * @param  array  $data
-     * @return \Illuminate\Contracts\Validation\Validator
-     */
     protected function validator(array $data)
     {
-        return Validator::make($data, [
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:8',],
             'gender' => ['required', 'string'],
             'age' => ['required', 'integer', 'min:0'], 
             'phone' => ['required', 'string', 'max:15'], 
             'address' => ['required', 'string', 'max:255'],
             'geolocation' => ['required', 'string', 'max:255'],
             'role' => ['required', 'string', 'in:member,partner,volunteer'], 
-        ]);
-        // Add role-specific validation rules
+        ];
+
+        if (!isset($data['google_id'])) {
+            $rules['password'] = ['required', 'string', 'min:8'];
+        }
+
         switch ($data['role']) {
             case 'member':
                 $rules['service_eligibility'] = ['required', 'string'];
@@ -99,30 +85,31 @@ class RegisterController extends Controller
 
         return Validator::make($data, $rules);
     }
-    
 
-    /**
-     * Create a new user instance after a valid registration.
-     *
-     * @param  array  $data
-     * @return \App\Models\User
-     */
     protected function create(array $data)
     {
         DB::beginTransaction();
 
         try {
-            $user = User::create([
+            $userData = [
                 'name' => $data['name'],
                 'email' => $data['email'],
-                'password' => Hash::make($data['password']),
                 'gender' => $data['gender'],
                 'age' => $data['age'],
                 'phone' => $data['phone'],
                 'address' => $data['address'],
                 'geolocation' => $data['geolocation'],
                 'role' => $data['role'],
-            ]);
+            ];
+
+            if (isset($data['google_id'])) {
+                $userData['google_id'] = $data['google_id'];
+                $userData['password'] = Hash::make(str_random(16));
+            } else {
+                $userData['password'] = Hash::make($data['password']);
+            }
+
+            $user = User::create($userData);
 
             switch ($data['role']) {
                 case 'member':
@@ -159,4 +146,3 @@ class RegisterController extends Controller
         }
     }
 }
-
