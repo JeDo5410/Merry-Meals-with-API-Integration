@@ -3,7 +3,7 @@
 @section('title', 'Register')
 
 @section('content')
-
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
 <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -286,7 +286,14 @@
                 </div>
                 <div class="modal-body">
                     <button id="emailSignup" class="btn btn-primary btn-block">Sign up with Email</button>
-                    <button id="googleSignup" class="btn btn-danger btn-block">Sign up with Google</button>
+                    <div id="g_id_onload"
+                        data-client_id="979946972745-hobdvu751q4ag2fsd0g3eqsbn7tdij2c.apps.googleusercontent.com"
+                        data-login_uri="{{ route('google.callback') }}"
+                        data-auto_prompt="false">
+                    </div>
+
+                    <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="outline"
+                        data-text="signin_with" data-size="large" data-logo_alignment="left"></div>
                     
                     <!-- Email signup form (initially hidden) -->
                     <form id="emailSignupForm" style="display: none;">
@@ -375,7 +382,7 @@
             const mainForm = document.getElementById('registrationForm');
             const modal = document.getElementById('signupModal');
             const emailSignupBtn = document.getElementById('emailSignup');
-            const googleSignupBtn = document.getElementById('googleSignup');
+            const googleSignupBtn = document.getElementById('g_id_onload');
             const emailSignupForm = document.getElementById('emailSignupForm');
 
             // Show modal when main form is submitted

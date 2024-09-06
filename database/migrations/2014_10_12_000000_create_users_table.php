@@ -21,8 +21,9 @@ return new class extends Migration
             $table->string('phone');
             $table->string('address');
             $table->string('geolocation');
-            $table->string('role');
+            $table->string('role')->default('member');
             $table->string('email')->unique();
+            $table->string('google_id')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();

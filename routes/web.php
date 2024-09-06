@@ -11,7 +11,7 @@ use App\Http\Controllers\DonationController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\VolunteerController;
 use App\Http\Controllers\Auth\RegisterController;
-
+use App\Http\Controllers\GoogleController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -86,6 +86,9 @@ Route::middleware(['auth:sanctum', 'verified'])->get('/dashboard', function () {
         }
     }
 })->name('welcome');
+
+route::get ('auth/google',[GoogleController::class,'googlepage']);
+Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback'])->name('google.callback');
 
 //Member
 Route::group(['prefix' => 'member'], function () {
