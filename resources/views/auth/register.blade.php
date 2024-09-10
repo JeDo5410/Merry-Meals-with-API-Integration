@@ -63,6 +63,13 @@
 .modal-backdrop.show {
     opacity: 0.5 !important;
 }
+.error-message {
+        font-size: 0.875em;
+        margin-top: 0.25rem;
+    }
+    .is-invalid {
+        border-color: #dc3545;
+    }
 
 </style>
 
@@ -438,9 +445,58 @@
                         field.focus();
                         return false;
                     }
+                    // Validate name field
+                const nameField = form.querySelector('#name');
+                if (nameField.value.length < 2 || nameField.value.length > 50) {
+                    showError(nameField, 'Name should be between 2 and 50 characters.');
+                    nameField.focus();
+                    return false;
+                }
+
+                const ageField = form.querySelector('#age');
+                const age = parseInt(ageField.value);
+                if (isNaN(age) || age < 18 || age > 120) {
+                    showError(ageField, 'Age should be between 18 and 120.');
+                    ageField.focus();
+                    return false;
+                }
+
                 }
                 return true;
             }
+
+             // Function to show error messages
+             function showError(field, message) {
+                // Remove any existing error message
+                const existingError = field.parentElement.querySelector('.error-message');
+                if (existingError) {
+                    existingError.remove();
+                }
+
+                // Create and append error message
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message text-danger';
+                errorDiv.textContent = message;
+                field.parentElement.appendChild(errorDiv);
+
+                // Highlight the field
+                field.classList.add('is-invalid');
+            }
+
+            // Function to clear error messages
+            function clearError(field) {
+                const errorDiv = field.parentElement.querySelector('.error-message');
+                if (errorDiv) {
+                    errorDiv.remove();
+                }
+                field.classList.remove('is-invalid');
+            }
+
+            // Add event listeners to clear errors when user starts typing
+            const allFields = mainForm.querySelectorAll('input, select, textarea');
+            allFields.forEach(field => {
+                field.addEventListener('input', () => clearError(field));
+            });
 
             // Validate email signup
             function validateEmailSignup() {
